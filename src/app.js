@@ -1,20 +1,17 @@
 require('dotenv').config()
-const express = require('express')
+const { NODE_ENV } = require('./config')
+const app = require('express')()
 const morgan = require('morgan')
+const morganOption = NODE_ENV === 'production' ? 'tiny' : 'dev'
 const helmet = require('helmet')
 const cors = require('cors')
-const { NODE_ENV } = require('./config')
-
-const app = express()
-const morganOption = NODE_ENV === 'production' ? 'tiny' : 'dev'
+const {dateRouter, tweetRouter } = require('./routers/index')
 
 app.use(morgan(morganOption))
 app.use(helmet())
 app.use(cors())
-app.get('/', (req, res) => {
-  res.send('Hello boilerplate')
-})
-
+app.use('/', dateRouter)
+app.use('/tweets', tweetRouter)
 app.use(function errorHandler(error, req, res, next) {
   let response
   if (NODE_ENV === "production") {
