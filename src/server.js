@@ -6,6 +6,14 @@ const server = http.createServer(app)
 const io = require('socket.io')(server)
 
 let interval;
+io.use((socket, next) => {
+  let symbol= socket.handshake.query.symbol;
+  if (symbol) {
+    console.log('symbol', symbol)
+    return next();
+  }
+  next()
+})
 
 io.on("connection", (socket) => {
   console.log("New client connected");
@@ -21,8 +29,9 @@ io.on("connection", (socket) => {
 
 const getApiAndEmit = socket => {
   const response = new Date();
-  // Emitting a new message. Will be consumed by the client
-  socket.emit("FromAPI", response);
+  const mathRandom = Math.random()
+  socket.emit("get_date", response);
+  socket.emit("get_tweets", mathRandom)
 };
 
 server.listen(PORT, () => { console.log(`listening on port ${PORT}`) })
