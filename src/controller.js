@@ -15,15 +15,18 @@ module.exports = function(io) {
     next()
   })
 
-  let interval;
+  // let interval;
   io.on("connection", (socket) => {
-    if(interval) {
-      clearInterval(interval)
-    }
-    interval = setInterval(() => getApiAndEmit(socket), 500000)
+    console.log("Client connected")
+    // if(interval) {
+    //   clearInterval(interval)
+    // }
+    getApiAndEmit(socket)
+
+    //interval = setInterval(() => getApiAndEmit(socket), 5000)
     socket.on("disconnect", () => {
-      console.log("Client disconnected");
-      clearInterval(interval);
+      console.log("Client disconnected")
+      // clearInterval(interval);
     });
   })
 
@@ -35,7 +38,7 @@ module.exports = function(io) {
       access_token_secret: TWIT_ACCESS_TOKEN_SECRET
     })
 
-    T.get(`search/tweets`, { q: '$AAPL', count: 10 }, (err, data, response) => {
+    T.get(`search/tweets`, { q: '#corona', count: 10 }, (err, data, response) => {
       const tweets = []
       for (let i = 0; i < data.statuses.length; i++) {
         const tweet = data.statuses[i]
@@ -54,5 +57,10 @@ module.exports = function(io) {
       }
       socket.emit('allTweets', tweets)
     })
+
+    T.stream(`statuses/filter`, { track: '#corona' }).on('tweet', (tweet) => {
+      socket.emit('tweet', { ...tweet} )
+    })
+
   }
 }
