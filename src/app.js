@@ -5,13 +5,11 @@ const morgan = require('morgan')
 const morganOption = NODE_ENV === 'production' ? 'tiny' : 'dev'
 const helmet = require('helmet')
 const cors = require('cors')
-const {dateRouter, tweetRouter } = require('./routers/index')
-
+const router = require('./routers/index')
 app.use(morgan(morganOption))
 app.use(helmet())
 app.use(cors())
-app.use('/', dateRouter)
-app.use('/tweets', tweetRouter)
+app.use(router)
 app.use(function errorHandler(error, req, res, next) {
   let response
   if (NODE_ENV === "production") {
