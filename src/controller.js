@@ -15,18 +15,12 @@ module.exports = function(io) {
     next()
   })
 
-  // let interval;
+
   io.on("connection", (socket) => {
     console.log("Client connected")
-    // if(interval) {
-    //   clearInterval(interval)
-    // }
     getApiAndEmit(socket)
-
-    //interval = setInterval(() => getApiAndEmit(socket), 5000)
     socket.on("disconnect", () => {
       console.log("Client disconnected")
-      // clearInterval(interval);
     });
   })
 
@@ -61,6 +55,5 @@ module.exports = function(io) {
     T.stream(`statuses/filter`, { track: '#corona' }).on('tweet', (tweet) => {
       socket.emit('tweet', { ...tweet} )
     })
-
   }
 }
