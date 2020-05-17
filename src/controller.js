@@ -15,7 +15,6 @@ module.exports = function(io) {
     next()
   })
 
-
   io.on("connection", (socket) => {
     console.log("Client connected")
     getApiAndEmit(socket)
