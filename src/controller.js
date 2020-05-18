@@ -52,6 +52,7 @@ module.exports = function(io) {
     })
 
     T.stream(`statuses/filter`, { track: '#corona' }).on('tweet', (tweet) => {
+      console.log('NEWW TWEET', tweet.user.screen_name)
       socket.emit('tweet', { ...tweet} )
     })
   }
