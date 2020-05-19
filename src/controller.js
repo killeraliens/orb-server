@@ -22,10 +22,10 @@ module.exports = function(io) {
     next()
   })
 
-  getStreamAndEmit(io)
   io.on("connection", (socket) => {
     console.log("Client connected")
     getInitalTweetsAndEmit(socket)
+    getStreamAndEmit(io)
     socket.on("disconnect", () => {
       console.log("Client disconnected")
     });
