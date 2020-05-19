@@ -1,4 +1,5 @@
 const Twit = require('twit')
+//const Twit = require('twitter')
 const {
   TWIT_API_KEY,
   TWIT_API_SECRET_KEY,
@@ -8,7 +9,7 @@ const {
 
 
 module.exports = function (app, io) {
-    const T = new Twit({
+    let T = new Twit({
       consumer_key: TWIT_API_KEY,
       consumer_secret: TWIT_API_SECRET_KEY,
       access_token: TWIT_ACCESS_TOKEN,
@@ -19,22 +20,20 @@ module.exports = function (app, io) {
   let twitterStream;
 
   app.locals.searchTerm = '#corona';
-  app.locals.showRetweets = false;
 
-  io.use((socket, next) => {
-    let symbol = socket.handshake.query.symbol;
-    if (symbol) {
-      console.log('symbol', symbol)
-      return next();
-    }
-    next()
-  })
+  app.post('/set-symbol', (req, res) => {
+    let { term } = req.body
+    app.locals.searchTerm = term;
+    console.log('SETTING TERM', app.locals.searchTerm)
+    if (twitterStream) twitterStream.destroy()
+    res.status(200).json({ term: term })
+  });
 
   io.on("connection", (socket) => {
     socketConnect = socket
     //getInitalTweetsAndEmit()
-    getStreamAndEmit()
-    socket.on("disconnect", () => {
+    setStream()
+    socket.on("connect", () => {
       console.log("Client connected")
     })
     socket.on("disconnect", () => {
@@ -66,19 +65,42 @@ module.exports = function (app, io) {
     })
   }
 
-  function getStreamAndEmit() {
+  function setStream() {
       let term = app.locals.searchTerm
       console.log('streaming for ' + term)
-      T.stream(`statuses/filter`, { track: term }).on('tweet', (tweet) => {
+      let stream = T.stream(`statuses/filter`, { track: term })
+    //  T.stream('statuses/filter', { track: app.locals.searchTerm }, (stream) => {
+      //console.log(stream)
+      stream.on('tweet', tweet => {
         let tweetBody = {
           text: tweet.text,
           userScreenName: '@' + tweet.user.screen_name,
           userImage: tweet.user.profile_image_url_https,
           userDescription: tweet.user.description
         }
-        console.log('NEWW TWEET', tweetBody.userScreenName)
-        socketConnect.emit('tweet', { ...tweetBody })
+        emitStream(tweetBody)
       })
+
+      stream.on('disconnect', message => {
+        console.log('twit disconnected')
+      })
+
+       stream.on('connected', message => {
+         console.log('twit connected')
+       })
+
+      stream.on('error', error => {
+        console.log('error in stream', error)
+      })
+
+      twitterStream = stream;
+  //  })
   }
+  function emitStream(tweet) {
+    console.log('NEWW TWEET', tweet.userScreenName)
+    socketConnect.emit('tweet', tweet)
+  }
+
 }
+
 
