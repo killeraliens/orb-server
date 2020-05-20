@@ -6,8 +6,6 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const server = http.createServer(app)
 const io = require('socket.io')(server)
-//require('./controller')(io)
-
 app.use(bodyParser.json());
 app.use(cors());
 require('./routes/index')(app, io)
