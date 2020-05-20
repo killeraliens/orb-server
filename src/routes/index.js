@@ -1,19 +1,18 @@
-const Twit = require('twit')
-//const Twitter = require('twitter')
+var Twitter = require('twitter')
 const {
-  TWIT_API_KEY,
-  TWIT_API_SECRET_KEY,
-  TWIT_ACCESS_TOKEN,
-  TWIT_ACCESS_TOKEN_SECRET
+  TWITTER_API_KEY,
+  TWITTER_API_SECRET_KEY,
+  TWITTER_ACCESS_TOKEN,
+  TWITTER_ACCESS_TOKEN_SECRET
 } = require('../config')
 
 
 module.exports = function (app, io) {
-    let T = new Twit({
-      consumer_key: TWIT_API_KEY,
-      consumer_secret: TWIT_API_SECRET_KEY,
-      access_token: TWIT_ACCESS_TOKEN,
-      access_token_secret: TWIT_ACCESS_TOKEN_SECRET
+    let T = new Twitter({
+      consumer_key: TWITTER_API_KEY,
+      consumer_secret: TWITTER_API_SECRET_KEY,
+      access_token_key: TWITTER_ACCESS_TOKEN,
+      access_token_secret: TWITTER_ACCESS_TOKEN_SECRET
     })
 
   let socketConnect;
@@ -25,21 +24,13 @@ module.exports = function (app, io) {
     let { term } = req.body
     app.locals.searchTerm = term;
     console.log('SETTING TERM', app.locals.searchTerm)
-    // if( !!twitterStream ) {
-    //   setStream2()
-    // } else {
-    //   setStream1()
-    // }
-    getInitalTweetsAndEmit()
-    if (!!twitterStream) await twitterStream
-    setStream1()
+    if (twitterStream) twitterStream.destroy()
+    setStream()
     res.status(200).json({ term: term })
   });
 
   io.on("connection", (socket) => {
     socketConnect = socket
-    //getInitalTweetsAndEmit()
-    // setStream1()
     socket.on("connect", () => {
       console.log("Client connected")
     })
@@ -72,75 +63,26 @@ module.exports = function (app, io) {
     })
   }
 
-  async function setStream1() {
+  function setStream() {
     let term = app.locals.searchTerm
     console.log('streaming for ' + term)
-    if (!!twitterStream) await twitterStream.stop()
-    let stream1 = T.stream(`statuses/filter`, { track: term })
+    T.stream(`statuses/filter`, { track: term }, stream => {
+      stream.on('data', tweet => {
+        let tweetBody = {
+          text: tweet.text,
+          userScreenName: '@' + tweet.user.screen_name,
+          userImage: tweet.user.profile_image_url_https,
+          userDescription: tweet.user.description
+        }
+        emitStream(tweetBody)
+      })
 
-    stream1.on('tweet', tweet => {
-      let tweetBody = {
-        text: tweet.text,
-        userScreenName: '@' + tweet.user.screen_name,
-        userImage: tweet.user.profile_image_url_https,
-        userDescription: tweet.user.description
-      }
-      emitStream(tweetBody)
+      stream.on('error', error => {
+        console.log('error in stream', error)
+      })
+
+      twitterStream = stream
     })
-
-    stream1.on('disconnected', message => {
-      console.log('twit disconnected')
-    })
-
-    stream1.on('connected', message => {
-      console.log('twit connected')
-      // twitterStream.stop()
-    })
-
-    stream1.on('error', error => {
-      console.log('error in stream', error)
-    })
-
-    twitterStream = stream1
-    return stream1
-    //  })
-  }
-
-  async function setStream2() {
-    let term = app.locals.searchTerm
-    console.log('streaming2 for ' + term)
-    if (!!twitterStream) await twitterStream.stop()
-    let stream2 = T.stream(`statuses/filter`, { track: term })
-
-    stream2.on('connected', res => {
-      console.log('twit2 connected')
-      // twitterStream.stop()
-    })
-
-    stream2.on('tweet', tweet => {
-      let tweetBody = {
-        text: tweet.text,
-        userScreenName: '@' + tweet.user.screen_name,
-        userImage: tweet.user.profile_image_url_https,
-        userDescription: tweet.user.description
-      }
-      emitStream(tweetBody)
-    })
-
-    stream2.on('connected', res => {
-      console.log('twit2 connected')
-    })
-
-    stream2.on('disconnected', res => {
-      console.log('stream2 disconnected')
-    })
-
-    stream2.on('error', error => {
-      console.log('error in stream', error)
-    })
-
-    twitterStream = stream2
-    return stream2
   }
 
   function emitStream(tweet) {
